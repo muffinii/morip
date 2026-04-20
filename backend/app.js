@@ -8,6 +8,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// 라우터 연결
+const memberRouter = require('./routes/member');
+app.use('/api/member', memberRouter);
+
 // 테스트용 API
 app.get('/', (req, res) => {
   res.json({ message: 'morip Backend Server' });
