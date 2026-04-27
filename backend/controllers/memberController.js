@@ -9,7 +9,7 @@ exports.signup = async (req, res) => {
 
         // 아이디, 이메일 중복 체크
         const [existing] = await pool.query(
-            'select pkid from users where user_id = ? or email = ?'
+            'select pkid from users where user_id = ? or email = ?',
             [user_id, email]
         );
         
@@ -23,7 +23,7 @@ exports.signup = async (req, res) => {
 
         // DB에 저장
         await pool.query(
-            'insert into users (user_id, email, password, nickname, category) values (? ?, ?, ?, ?)',
+            'insert into users (user_id, email, password, nickname, category) values (?, ?, ?, ?, ?)',
             [user_id, email, heashedPassword, nickname, category]
         );
 

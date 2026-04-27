@@ -12,6 +12,9 @@ app.use(express.json());
 const memberRouter = require('./routes/member');
 app.use('/api/member', memberRouter);
 
+const subjectRouter = require('./routes/subject');
+app.use('/api/subjects', subjectRouter);
+
 // 테스트용 API
 app.get('/', (req, res) => {
   res.json({ message: 'morip Backend Server' });
