@@ -15,6 +15,9 @@ app.use('/api/member', memberRouter);
 const subjectRouter = require('./routes/subject');
 app.use('/api/subjects', subjectRouter);
 
+const sessionRouter = require('./routes/session');
+app.use('/api/sessions', sessionRouter);
+
 // 테스트용 API
 app.get('/', (req, res) => {
   res.json({ message: 'morip Backend Server' });
