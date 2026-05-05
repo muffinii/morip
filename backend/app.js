@@ -21,6 +21,9 @@ app.use('/api/sessions', sessionRouter);
 const escapeRouter = require('./routes/escape');
 app.use('/api/escapes', escapeRouter);
 
+const reportRouter = require('./routes/report');
+app.use('/api/report', reportRouter);
+
 // 테스트용 API
 app.get('/', (req, res) => {
   res.json({ message: 'morip Backend Server' });
