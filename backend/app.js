@@ -24,6 +24,11 @@ app.use('/api/escapes', escapeRouter);
 const reportRouter = require('./routes/report');
 app.use('/api/report', reportRouter);
 
+const friendRouter = require('./routes/friend');
+const rankingRouter = require('./routes/ranking');
+app.use('/api/friends', friendRouter);
+app.use('/api/ranking', rankingRouter);
+
 // 테스트용 API
 app.get('/', (req, res) => {
   res.json({ message: 'morip Backend Server' });
