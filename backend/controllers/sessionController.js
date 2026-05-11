@@ -93,8 +93,8 @@ exports.endSession = async (req, res) => {
       message: '공부 세션 종료',
       focus_score: focusScore,
       escape_count: escapeCount,
-      total_session_minutes: Math.round(totalSessionMinutes),
-      total_escape_minutes: Math.round(totalEscapeMinutes),
+      total_session_seconds: Math.round(totalSessionMinutes * 60),
+total_escape_seconds: Math.round(totalEscapeMinutes * 60),
       focus_bonus: focusBonus
     });
   } catch (error) {

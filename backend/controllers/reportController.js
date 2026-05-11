@@ -5,7 +5,7 @@ exports.getDailyReport = async (req, res) => {
     try {
         const [result] = await pool.query(
             `select count(*) as total_sessions,
-            coalesce(sum(timestampdiff(minute, start_time, end_time)), 0) as total_study_minutes,
+            coalesce(sum(timestampdiff(second, start_time, end_time)), 0) as total_study_seconds,
             coalesce(sum(escape_count), 0) as total_escapes,
             coalesce(round(avg(focus_score)), 0) as avg_score
             from sessions

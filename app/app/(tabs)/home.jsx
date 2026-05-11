@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, FlatList, AppState } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api } from '../../src/api/client';
 import Svg, { Path } from 'react-native-svg';
@@ -14,6 +14,11 @@ export default function HomeScreen() {
     const [seconds, setSeconds] = useState(0);
     const [dailyStats, setDailyStats] = useState(null);
     const timerRef = useRef(null);
+    const [escapeId, setEscapeId] = useState(null);
+    const appState = useRef(AppState.currentState);
+    const [escapeSeconds, setEscapeSeconds] = useState(0);
+    const [isEscaped, setIsEscaped] = useState(false);
+    const escapeTimerRef = useRef(null);
 
     useEffect(() => {
         loadSubjects();
@@ -28,6 +33,47 @@ export default function HomeScreen() {
         }
         return () => clearInterval(timerRef.current);
     }, [isStudying]);
+
+    // 이탈 감지
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', async (nextAppState) => {
+            // 앱이 백그라운드로 갈 때 (이탈 시작)
+            if (appState.current === 'active' && nextAppState.match(/inactive|background/) && isStudying && sessionId) {
+                try {
+                    const data = await api('/escapes', 'POST', { session_id: sessionId }, token);
+                    setEscapeId(data.escape_id);
+                    setIsEscaped(true);
+                } catch (error) {
+                    console.error('이탈 기록 실패', error);
+                }
+            }
+
+            // 앱으로 다시 돌아올 때 (이탈 복귀)
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active' && escapeId) {
+                try {
+                    await api(`/escapes/${escapeId}`, 'PUT', null, token);
+                    setEscapeId(null);
+                    setIsEscaped(false);
+                } catch (error) {
+                    console.error('이탈 복귀 기록 실패', error);
+                }
+            }
+
+            appState.current = nextAppState;
+        });
+
+        return () => subscription.remove();
+    }, [isStudying, sessionId, escapeId]);
+
+    // 이탈 시간 타이머
+    useEffect(() => {
+        if (isEscaped) {
+            escapeTimerRef.current = setInterval(() => {
+                setEscapeSeconds(prev => prev + 1);
+            }, 1000);
+        }
+        return () => clearInterval(escapeTimerRef.current);
+    }, [isEscaped]);
 
     const loadSubjects = async () => {
         try {
@@ -54,16 +100,22 @@ export default function HomeScreen() {
         return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const startStudy = async () => {
-        if (!selectedSubject) {
-            Alert.alert('알림', '과목을 선택해주세요');
-            return;
-        }
+    const formatStudyTime = (totalSeconds) => {
+        const hrs = Math.floor(totalSeconds / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = totalSeconds % 60;
+        return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    const startStudyWithSubject = async (subject) => {
         try {
-            const data = await api('/sessions', 'POST', { subject_id: selectedSubject.subject_id }, token);
+            const data = await api('/sessions', 'POST', { subject_id: subject.subject_id }, token);
             setSessionId(data.session_id);
+            setSelectedSubject(subject);
             setIsStudying(true);
             setSeconds(0);
+            setEscapeSeconds(0);  // 추가
+            setIsEscaped(false);  // 추가
         } catch (error) {
             Alert.alert('오류', '세션을 시작할 수 없습니다');
         }
@@ -88,8 +140,8 @@ export default function HomeScreen() {
                                 token, nickname,
                                 focus_score: data.focus_score,
                                 escape_count: data.escape_count,
-                                total_session_minutes: data.total_session_minutes,
-                                total_escape_minutes: data.total_escape_minutes,
+                                total_session_seconds: data.total_session_seconds,
+                                total_escape_seconds: data.total_escape_seconds,
                                 focus_bonus: data.focus_bonus,
                                 subject_name: selectedSubject.name
                             }
@@ -108,7 +160,18 @@ export default function HomeScreen() {
             <View style={styles.timerContainer}>
                 <Text style={styles.studyingSubject}>{selectedSubject.name}</Text>
                 <Text style={styles.timer}>{formatTime(seconds)}</Text>
-                <Text style={styles.studyingLabel}>집중 중...</Text>
+                <Text style={styles.studyingLabel}>
+                    {isEscaped ? '이탈 중...' : '집중 중...'}
+                </Text>
+
+                {escapeSeconds > 0 && (
+                    <View style={styles.escapeInfo}>
+                        <Text style={styles.escapeText}>
+                            이탈 시간: {formatTime(escapeSeconds)}
+                        </Text>
+                    </View>
+                )}
+
                 <TouchableOpacity style={styles.stopButton} onPress={endStudy}>
                     <Text style={styles.stopButtonText}>공부 종료</Text>
                 </TouchableOpacity>
@@ -138,15 +201,9 @@ export default function HomeScreen() {
                 <View style={styles.dailyStats}>
                     <View style={styles.dailyStat}>
                         <Text style={styles.dailyNumber}>
-                            {dailyStats ? dailyStats.total_study_minutes : 0}분
+                            {formatStudyTime(dailyStats ? dailyStats.total_study_seconds : 0)}
                         </Text>
                         <Text style={styles.dailyLabel}>공부 시간</Text>
-                    </View>
-                    <View style={styles.dailyStat}>
-                        <Text style={styles.dailyNumber}>
-                            {dailyStats ? dailyStats.total_sessions : 0}회
-                        </Text>
-                        <Text style={styles.dailyLabel}>공부 횟수</Text>
                     </View>
                     <View style={styles.dailyStat}>
                         <Text style={styles.dailyNumber}>
@@ -158,25 +215,26 @@ export default function HomeScreen() {
             </View>
 
             {/* 과목 선택 */}
-            <Text style={styles.sectionTitle}>무엇을 공부할까요?</Text>
+            <Text style={styles.sectionTitle}>과목</Text>
 
             <FlatList
                 data={subjects}
                 keyExtractor={(item) => item.subject_id.toString()}
                 renderItem={({ item }) => (
                     <TouchableOpacity
-                        style={[
-                            styles.subjectItem,
-                            selectedSubject?.subject_id === item.subject_id && styles.subjectSelected
-                        ]}
-                        onPress={() => setSelectedSubject(item)}
+                        style={styles.subjectItem}
+                        onPress={() => {
+                            setSelectedSubject(item);
+                            startStudyWithSubject(item);
+                        }}
                     >
-                        <Text style={[
-                            styles.subjectText,
-                            selectedSubject?.subject_id === item.subject_id && styles.subjectTextSelected
-                        ]}>
-                            {item.name}
-                        </Text>
+                        <View style={styles.subjectRow}>
+                            <View>
+                                <Text style={styles.subjectText}>{item.name}</Text>
+                                <Text style={styles.subjectTime}>{formatStudyTime(item.today_seconds)}</Text>
+                            </View>
+                            <Text style={styles.playIcon}>▶</Text>
+                        </View>
                     </TouchableOpacity>
                 )}
                 style={styles.subjectList}
@@ -187,10 +245,6 @@ export default function HomeScreen() {
                 onPress={() => router.push({ pathname: '/addsubject', params: { token } })}
             >
                 <Text style={styles.addButtonText}>+ 과목 추가</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.startButton} onPress={startStudy}>
-                <Text style={styles.startButtonText}>공부 시작</Text>
             </TouchableOpacity>
         </View>
     );
@@ -327,7 +381,7 @@ const styles = StyleSheet.create({
         marginBottom: 60,
     },
     stopButton: {
-        backgroundColor: '#e74c3c',
+        backgroundColor: '#4A90D9',
         paddingVertical: 15,
         paddingHorizontal: 40,
         borderRadius: 10,
@@ -336,5 +390,28 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    subjectRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    subjectTime: {
+        fontSize: 13,
+        color: '#888',
+    },
+    playIcon: {
+        fontSize: 18,
+        color: '#4A90D9',
+    },
+    escapeInfo: {
+        marginBottom: 40,
+        padding: 10,
+        backgroundColor: 'rgba(231, 76, 60, 0.2)',
+        borderRadius: 10,
+    },
+    escapeText: {
+        color: '#e74c3c',
+        fontSize: 14,
     },
 });

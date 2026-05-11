@@ -2,17 +2,19 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+const formatStudyTime = (totalSeconds) => {
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 export default function ResultScreen() {
   const router = useRouter();
   const {
-    token,
-    nickname,
-    focus_score,
-    escape_count,
-    total_session_minutes,
-    total_escape_minutes,
-    focus_bonus,
-    subject_name
+    token, nickname, focus_score, escape_count,
+    total_session_seconds, total_escape_seconds,
+    focus_bonus, subject_name
   } = useLocalSearchParams();
 
   return (
@@ -28,7 +30,7 @@ export default function ResultScreen() {
       <View style={styles.statsContainer}>
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>총 공부 시간</Text>
-          <Text style={styles.statValue}>{total_session_minutes}분</Text>
+          <Text style={styles.statValue}>{formatStudyTime(Number(total_session_seconds))}</Text>
         </View>
 
         <View style={styles.statRow}>
@@ -38,7 +40,7 @@ export default function ResultScreen() {
 
         <View style={styles.statRow}>
           <Text style={styles.statLabel}>이탈 시간</Text>
-          <Text style={styles.statValue}>{total_escape_minutes}분</Text>
+          <Text style={styles.statValue}>{formatStudyTime(Number(total_escape_seconds))}</Text>
         </View>
 
         <View style={styles.statRow}>
