@@ -15,8 +15,24 @@ export default function SignupScreen() {
   const categories = ['대학생', '고등학생', '공시생', '기타'];
 
   const handleSignup = async () => {
+    if (!userId.trim()) {
+      Alert.alert('알림', '아이디를 입력해주세요');
+      return;
+    }
+    if (!email.trim()) {
+      Alert.alert('알림', '이메일을 입력해주세요');
+      return;
+    }
+    if (!password.trim()) {
+      Alert.alert('알림', '비밀번호를 입력해주세요');
+      return;
+    }
     if (password !== passwordConfirm) {
       Alert.alert('오류', '비밀번호가 일치하지 않습니다');
+      return;
+    }
+    if (!nickname.trim()) {
+      Alert.alert('알림', '닉네임을 입력해주세요');
       return;
     }
 
