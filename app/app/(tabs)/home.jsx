@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, FlatList, AppState } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router'
 import { api } from '../../src/api/client';
 import Svg, { Path } from 'react-native-svg';
 
@@ -20,10 +20,12 @@ export default function HomeScreen() {
     const [isEscaped, setIsEscaped] = useState(false);
     const escapeTimerRef = useRef(null);
 
-    useEffect(() => {
-        loadSubjects();
-        loadDailyStats();
-    }, []);
+    useFocusEffect(
+        useCallback(() => {
+            loadSubjects();
+            loadDailyStats();
+        }, [])
+    );
 
     useEffect(() => {
         if (isStudying) {
@@ -312,7 +314,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     subjectList: {
-        maxHeight: 200,
+        flex: 1,
     },
     subjectItem: {
         padding: 14,
