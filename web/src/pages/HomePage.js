@@ -111,10 +111,17 @@ export default function HomePage() {
             const data = await api(`/sessions/${sessionId}`, 'PUT', null, token);
             setIsStudying(false);
             setIsEscaped(false);
-            setSelectedSubject(null);
-            loadSubjects();
-            loadDailyStats();
-            alert(`공부 완료!\n집중력 점수: ${data.focus_score}점\n이탈 횟수: ${data.escape_count}회`);
+
+            navigate('/result', {
+                state: {
+                    focus_score: data.focus_score,
+                    escape_count: data.escape_count,
+                    total_session_seconds: data.total_session_seconds,
+                    total_escape_seconds: data.total_escape_seconds,
+                    focus_bonus: data.focus_bonus,
+                    subject_name: selectedSubject.name,
+                }
+            });
         } catch (error) { alert('세션 종료에 실패했습니다'); }
     };
 

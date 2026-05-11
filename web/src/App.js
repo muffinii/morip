@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage';
 import HomePage from './pages/HomePage';
 import MyPage from './pages/MyPage';
 import './App.css';
+import ResultPage from './pages/ResultPage';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/mypage" element={<MyPage />} />
+        <Route path="/result" element={<ResultPage />} />
       </Routes>
     </BrowserRouter>
   );
