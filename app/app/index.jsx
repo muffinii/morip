@@ -17,7 +17,7 @@ export default function LoginScreen() {
 
       if (data.token) {
         Alert.alert('로그인 성공', `${data.user.nickname}님 환영합니다!`);
-        router.replace({ pathname: '/home', params: { token: data.token, nickname: data.user.nickname } });
+        router.replace({ pathname: '/(tabs)/home', params: { token: data.token, nickname: data.user.nickname } });
       } else {
         Alert.alert('로그인 실패', data.message);
       }
